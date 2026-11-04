@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+.vite
+*.log
+.env
+.env.*
+!.env.example
+
+# Cloudflare
+.wrangler
+.dev.vars
+
+# TypeScript build info
+*.tsbuildinfo

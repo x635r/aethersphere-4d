@@ -1,0 +1,30 @@
+{
+  "name": "aethersphere-4d",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AetherSphere 4D - Holographic Earth Atmospheric Digital Twin",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false --pretty",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lucide-react": "1.66.0",
+    "maplibre-gl": "5.24.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zustand": "5.0.16"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}

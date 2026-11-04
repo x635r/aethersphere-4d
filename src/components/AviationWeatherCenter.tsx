@@ -64,6 +64,7 @@ export interface AviationWeatherCenterProps {
   onToggleFlights: () => void;
   onRetryFlights: () => void;
   flightsLoading: boolean;
+  flightsError: string | null;
 }
 
 const HAZARD_ICONS: Record<string, typeof Wind> = {
@@ -97,6 +98,7 @@ export function AviationWeatherCenter(props: AviationWeatherCenterProps) {
     onToggleFlights,
     onRetryFlights,
     flightsLoading,
+    flightsError,
   } = props;
 
   const [tab, setTab] = useState<'hazard' | 'airport' | 'flight'>('hazard');
@@ -210,6 +212,7 @@ export function AviationWeatherCenter(props: AviationWeatherCenterProps) {
             <FlightTab
               flights={flights}
               loading={flightsLoading}
+              error={flightsError}
               visible={flightsVisible}
               onToggle={onToggleFlights}
               onRetry={onRetryFlights}
@@ -827,12 +830,14 @@ function Kv({ label, value }: { label: string; value: string }) {
 function FlightTab({
   flights,
   loading,
+  error,
   visible,
   onToggle,
   onRetry,
 }: {
   flights: FlightCollection | null;
   loading: boolean;
+  error: string | null;
   visible: boolean;
   onToggle: () => void;
   onRetry: () => void;
@@ -885,9 +890,22 @@ function FlightTab({
           </div>
         ))}
         {active.length === 0 ? (
-          <p className="px-2 py-6 text-center text-[9.5px] text-slate-500">
-            {loading ? '正在连接 OpenSky…' : '当前视口内无空中航班'}
-          </p>
+          <div className="px-2 py-6 text-center">
+            {loading ? (
+              <p className="text-[9.5px] text-slate-500">正在连接 OpenSky…</p>
+            ) : error ? (
+              <>
+                <p className="text-[9.5px] text-amber-300">{error}</p>
+                <p className="mt-1 text-[8px] leading-relaxed text-slate-600">
+                  OpenSky 会拒绝来自云服务出口 IP 的连接（边缘返回 522），
+                  而同样的请求从住宅网络可正常返回。这是上游策略，无法在应用层绕过。
+                  本地 `npm run dev` 下航班功能正常。
+                </p>
+              </>
+            ) : (
+              <p className="text-[9.5px] text-slate-500">当前视口内无空中航班</p>
+            )}
+          </div>
         ) : null}
       </div>
 

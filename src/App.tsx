@@ -452,6 +452,7 @@ export default function App() {
           onToggleFlights={stage4.toggleFlights}
           onRetryFlights={stage4.refreshFlights}
           flightsLoading={stage4.flightsLoading}
+          flightsError={stage4.flightsError}
         />
       </PanelBoundary>
 

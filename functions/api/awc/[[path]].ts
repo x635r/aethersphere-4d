@@ -138,9 +138,30 @@ export async function onRequestGet(
   }
 
   if (!upstream.ok) {
-    return badRequest(
-      `Upstream responded ${upstream.status} ${upstream.statusText}`,
-      502,
+    // OpenSky intermittently refuses Cloudflare edge egress with a 522 while
+    // answering the same request fine from a residential IP. That is an
+    // upstream-side block we cannot route around, so it is reported as its own
+    // machine-readable state rather than as a generic proxy failure — the client
+    // uses it to explain the situation instead of showing a raw status code.
+    const edgeBlocked = isOpenSky && (upstream.status === 522 || upstream.status === 520);
+
+    return new Response(
+      JSON.stringify({
+        error: true,
+        reason: edgeBlocked
+          ? 'OpenSky 拒绝了 Cloudflare 边缘节点的连接（522）。这是上游对云服务出口 IP 的限制。'
+          : `Upstream responded ${upstream.status} ${upstream.statusText}`,
+        upstreamStatus: upstream.status,
+        edgeBlocked,
+        source: isOpenSky ? 'opensky' : 'awc',
+      }),
+      {
+        status: 502,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+        },
+      },
     );
   }
 

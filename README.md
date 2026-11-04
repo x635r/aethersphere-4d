@@ -573,3 +573,27 @@ npx wrangler pages dev dist --port 8788
 
 本项目**不需要任何 API 密钥**。九个数据源全部开放访问；唯一需要服务端介入的
 是 CORS 与 User-Agent 限制，由 Pages Function 处理。
+
+### 已知的部署限制：OpenSky 的云出口封锁
+
+这是**上游策略限制，无法在应用层绕过**。
+
+| 环境 | OpenSky 请求结果 |
+| --- | --- |
+| 本地 `npm run dev` | 200，正常返回数千架航班 |
+| `wrangler pages dev`（本机运行时） | 200，正常 |
+| **Cloudflare Pages 边缘** | **522，连接超时（实测 19.6 s）** |
+
+诊断证据：同一个 URL 从住宅网络直连返回 200 / 468 KB，而 Cloudflare 边缘节点
+在 19.6 秒后收到上游的 `error code: 522`。AWC 的代理不受影响（同时刻返回 200），
+所以这不是 Cloudflare 出口整体故障，而是 OpenSky 针对云服务 IP 段的限制。
+
+处理方式：代理会把这种情况识别为 `edgeBlocked: true` 并附上准确的说明文字，
+面板直接告知「OpenSky 拒绝了 Cloudflare 边缘节点的连接」，而不是抛一个裸 502。
+其余航空气象功能（SIGMET 142 条、METAR、PIREP、侧风解算）在线上全部正常。
+
+如果需要线上航班功能，可选方案：
+
+1. 使用 Cloudflare Worker 之外的出口（如自建小服务转发）；
+2. 注册 OpenSky 账号使用 OAuth2（额度更高，但同样受 IP 策略约束）；
+3. 换用 OpenSky 的 `/api/flights/*` 历史端点并接受 1 小时延迟。

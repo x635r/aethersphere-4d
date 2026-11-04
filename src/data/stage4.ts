@@ -43,11 +43,54 @@ function makeCache<T>(max = 24) {
   };
 }
 
+/**
+ * Thrown when the proxy reports that an upstream refused the edge connection.
+ *
+ * Distinguished from a generic failure so the UI can name the real cause —
+ * "OpenSky blocked the edge" is actionable, "502" is not.
+ */
+export class UpstreamBlockedError extends Error {
+  readonly edgeBlocked: boolean;
+  readonly upstreamStatus: number | null;
+
+  constructor(message: string, edgeBlocked: boolean, upstreamStatus: number | null) {
+    super(message);
+    this.name = 'UpstreamBlockedError';
+    this.edgeBlocked = edgeBlocked;
+    this.upstreamStatus = upstreamStatus;
+  }
+}
+
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, { signal, headers: { Accept: 'application/json' } });
+
   if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText}: ${url.replace(/\?.*$/, '')}`);
+    // The proxy returns a JSON body describing why it failed; read it so the
+    // reason reaches the panel instead of being flattened into a status code.
+    let reason = `${res.status} ${res.statusText}`;
+    let edgeBlocked = false;
+    let upstreamStatus: number | null = null;
+
+    try {
+      const body = (await res.json()) as {
+        reason?: string;
+        edgeBlocked?: boolean;
+        upstreamStatus?: number;
+      };
+      if (typeof body.reason === 'string') reason = body.reason;
+      edgeBlocked = Boolean(body.edgeBlocked);
+      upstreamStatus = typeof body.upstreamStatus === 'number' ? body.upstreamStatus : null;
+    } catch {
+      /* body was not JSON; keep the status line */
+    }
+
+    throw new UpstreamBlockedError(
+      `${reason} (${url.replace(/\?.*$/, '')})`,
+      edgeBlocked,
+      upstreamStatus,
+    );
   }
+
   return (await res.json()) as T;
 }
 
